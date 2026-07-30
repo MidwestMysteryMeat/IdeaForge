@@ -1,5 +1,7 @@
 # IdeaForge
 
+![IdeaForge pull screen — rarity card, XP bar, daily challenges](screenshots/gameplay.png)
+
 A single-file, zero-dependency **inspiration slot machine** for game developers and tool builders. One big button. Every pull generates a coherent, usable project idea — with a rarity system, XP, streaks, daily challenges, and a persistent codex of everything you've discovered.
 
 **No build step. No frameworks. No server.** Open `index.html` in any modern browser and start pulling.

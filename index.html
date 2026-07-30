@@ -1,0 +1,1309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>IdeaForge — Inspiration Slot Machine</title>
+<link rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#10141d; --panel:#141926; --panel2:#1a2030;
+  --ink:#e6eaf2; --ink-dim:#8b94a7; --line:#232b3d;
+  --accent:#f5b356; --accent-ink:#1a1206;
+  --r-common:#aeb7c4; --r-uncommon:#4ade80; --r-rare:#38bdf8;
+  --r-epic:#c084fc; --r-legendary:#fbbf24; --r-mythic:#f43f5e;
+}
+[data-theme="ice"]{--accent:#67e8f9;--accent-ink:#062026}
+[data-theme="toxic"]{--accent:#a3e635;--accent-ink:#141c04}
+[data-theme="ember"]{--accent:#ff6b35;--accent-ink:#210b02}
+[data-theme="royal"]{--accent:#a78bfa;--accent-ink:#130b2a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #182036 0%, transparent 60%),
+    var(--bg);
+  color:var(--ink);
+  font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  overflow-x:hidden;
+}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:60}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:55;opacity:0;background:radial-gradient(circle at 50% 45%, #fff7e0 0%, rgba(255,215,120,.55) 40%, transparent 75%)}
+#flash.on{animation:flash .6s ease-out}
+#flash.mythic{background:radial-gradient(circle at 50% 45%, #ffd7dd 0%, rgba(244,63,94,.5) 40%, transparent 75%)}
+@keyframes flash{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
+#stage{max-width:900px;margin:0 auto;padding:20px 16px 60px;position:relative}
+#stage.shake{animation:shake .5s linear}
+#stage.shake-big{animation:shakeBig .75s linear}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-6px,-3px)}80%{transform:translate(4px,4px)}}
+@keyframes shakeBig{0%,100%{transform:translate(0,0)}15%{transform:translate(-10px,6px) rotate(-.4deg)}30%{transform:translate(11px,-7px) rotate(.4deg)}45%{transform:translate(-9px,-6px)}60%{transform:translate(9px,7px) rotate(-.3deg)}75%{transform:translate(-6px,4px)}90%{transform:translate(4px,-3px)}}
+@media (prefers-reduced-motion:reduce){#stage.shake,#stage.shake-big{animation:none}}
+
+/* ---------- header ---------- */
+header{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:6px 2px 18px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.brand{font-weight:900;font-size:22px;letter-spacing:3px}
+.brand span{color:var(--accent)}
+.brand small{display:block;font-weight:500;letter-spacing:1px;font-size:10px;color:var(--ink-dim);text-transform:uppercase}
+.rank{flex:1 1 220px;min-width:200px;max-width:360px}
+.rank-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px}
+#rankTitle{font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px}
+#xpText{color:var(--ink-dim);font-variant-numeric:tabular-nums}
+.xpbar{height:8px;background:var(--panel);border:1px solid var(--line);border-radius:99px;overflow:hidden;margin-top:5px}
+#xpFill{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#fff3);border-radius:99px;transition:width .7s cubic-bezier(.2,.9,.2,1)}
+.hud{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip-btn{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;transition:transform .08s,border-color .15s,background .15s}
+.chip-btn:hover{border-color:var(--accent)}
+.chip-btn:active{transform:scale(.95)}
+.chip-btn.active{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+#streak{font-variant-numeric:tabular-nums;min-width:74px;text-align:center}
+#streak.fire{border-color:#f97316;color:#fdba74;background:#2a160a}
+#streak.fire.hi{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+/* ---------- pull button ---------- */
+.pull-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:8px 0 24px}
+#pull{
+  width:min(440px,100%);padding:22px 20px 18px;border:0;border-radius:18px;cursor:pointer;
+  font:900 26px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:4px;color:var(--accent-ink);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 100%,white 12%),var(--accent));
+  box-shadow:0 6px 0 color-mix(in srgb,var(--accent) 55%,black 45%),0 14px 40px -8px color-mix(in srgb,var(--accent) 50%,transparent);
+  transition:transform .07s,box-shadow .07s,filter .15s;
+}
+#pull small{display:block;font-weight:600;font-size:11px;letter-spacing:2px;margin-top:7px;opacity:.65}
+#pull:hover{filter:brightness(1.06)}
+#pull:active,#pull.pressed{transform:translateY(5px);box-shadow:0 1px 0 color-mix(in srgb,var(--accent) 55%,black 45%),0 6px 18px -6px color-mix(in srgb,var(--accent) 50%,transparent)}
+
+/* ---------- banner ---------- */
+#banner{
+  position:relative;text-align:center;font-weight:900;letter-spacing:3px;font-size:14px;color:#0e1420;
+  background:linear-gradient(90deg,transparent,var(--r-legendary),transparent);
+  border-radius:8px;padding:6px;margin:0 auto 12px;max-width:420px;opacity:0;transform:translateY(-6px);transition:opacity .3s,transform .3s;
+}
+#banner.show{opacity:1;transform:translateY(0)}
+
+/* ---------- result card ---------- */
+#card{
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line);border-left:5px solid var(--r-common);
+  border-radius:16px;padding:22px 24px;position:relative;overflow:hidden;
+}
+#card.pop{animation:pop .45s cubic-bezier(.2,1.2,.3,1)}
+@keyframes pop{0%{opacity:0;transform:translateY(14px) scale(.965)}100%{opacity:1;transform:none}}
+#card.mythic-anim{animation:mythicIn 1s cubic-bezier(.2,1,.3,1)}
+@keyframes mythicIn{0%{opacity:0;transform:scale(1.15);filter:invert(1) blur(4px)}45%{opacity:1;filter:invert(1) blur(0)}60%{filter:invert(0)}100%{transform:scale(1)}}
+#card.empty{color:var(--ink-dim);text-align:center;padding:48px 24px;font-size:15px;border-left-color:var(--line)}
+#card .glowbar{position:absolute;inset:0 auto 0 0;width:5px}
+.rar-tag{display:inline-block;font-size:11px;font-weight:900;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;border-radius:6px;border:1px solid currentColor;margin-bottom:10px}
+#ideaTitle{font-size:clamp(22px,4vw,30px);font-weight:900;line-height:1.15;margin-bottom:4px}
+.meta{color:var(--ink-dim);font-size:13px;margin-bottom:14px}
+.meta b{color:var(--ink);font-weight:600}
+.hook{font-size:16.5px;font-style:italic;border-left:3px solid var(--line);padding:2px 0 2px 14px;margin:0 0 16px;color:#cdd6e6}
+.sect{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--ink-dim);margin:14px 0 6px}
+#feats{list-style:none}
+#feats li{padding:4px 0 4px 22px;position:relative}
+#feats li::before{content:"▸";position:absolute;left:4px;color:var(--accent)}
+.kv{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:14px;font-size:13.5px}
+.kv div{color:var(--ink-dim)}
+.kv b{color:var(--ink);font-weight:600}
+.twist{background:#0d1119;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;margin-top:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+#favBtn.faved{background:#2a2410;border-color:var(--r-legendary);color:var(--r-legendary)}
+
+/* rarity skins */
+#card.r-common{border-left-color:var(--r-common)} #card.r-common .rar-tag{color:var(--r-common)}
+#card.r-uncommon{border-left-color:var(--r-uncommon)} #card.r-uncommon .rar-tag{color:var(--r-uncommon)}
+#card.r-rare{border-left-color:var(--r-rare);box-shadow:0 0 40px -18px var(--r-rare)} #card.r-rare .rar-tag{color:var(--r-rare)}
+#card.r-epic{border-left-color:var(--r-epic);box-shadow:0 0 46px -16px var(--r-epic)} #card.r-epic .rar-tag{color:var(--r-epic)}
+#card.r-legendary{border-left-color:var(--r-legendary);box-shadow:0 0 60px -12px var(--r-legendary)} #card.r-legendary .rar-tag{color:var(--r-legendary);background:#241a05}
+#card.r-mythic{border-left-color:var(--r-mythic);box-shadow:0 0 70px -10px var(--r-mythic);background:linear-gradient(180deg,#1d1016,#141926)} #card.r-mythic .rar-tag{color:var(--r-mythic);background:#26060d}
+
+/* ---------- lower panels ---------- */
+.row2{display:grid;grid-template-columns:1fr 300px;gap:18px;margin-top:22px}
+@media (max-width:760px){.row2{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.panel h3{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-dim);margin-bottom:10px}
+#history{display:flex;flex-direction:column;gap:6px}
+.hist-chip{display:flex;gap:8px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer;text-align:left;width:100%}
+.hist-chip:hover{border-color:var(--accent)}
+.hist-chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+.hist-chip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-chip em{margin-left:auto;color:var(--ink-dim);font-size:11px;font-style:normal;flex:0 0 auto}
+#chList{display:flex;flex-direction:column;gap:10px}
+.ch{font-size:13px}
+.ch .bar{height:5px;background:var(--bg2);border-radius:99px;margin-top:5px;overflow:hidden}
+.ch .bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.ch.done{color:var(--ink-dim)}
+.ch.done .txt::after{content:" ✓";color:var(--r-uncommon);font-weight:900}
+.ch .sub{color:var(--ink-dim);font-size:11px;margin-top:2px}
+
+/* ---------- codex modal ---------- */
+.modal{position:fixed;inset:0;z-index:70;background:rgba(5,8,14,.75);backdrop-filter:blur(4px);display:flex;align-items:flex-start;justify-content:center;padding:5vh 16px;overflow-y:auto}
+.modal.hidden,#banner.hidden{display:none}
+.hidden{display:none}
+.modal-panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;max-width:760px;width:100%;padding:22px 24px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.modal-head h2{font-size:18px;letter-spacing:2px}
+#codexStats{color:var(--ink-dim);font-size:13px;margin-bottom:14px}
+.cdx-group{margin-bottom:14px}
+.cdx-group h4{font-size:11px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.cdx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.cdx-item{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font:inherit;font-size:12.5px;color:var(--ink);cursor:pointer;text-align:left;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.cdx-item:hover{border-color:var(--accent)}
+.cdx-item.fav::after{content:" ★";color:var(--r-legendary)}
+.modal-foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);align-items:center}
+.theme-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.theme-dot.sel{border-color:#fff}
+.theme-dot.locked{opacity:.3;cursor:not-allowed}
+footer{margin-top:26px;text-align:center;color:var(--ink-dim);font-size:12px}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px;padding:10px 18px;border-radius:10px;opacity:0;pointer-events:none;z-index:80;transition:all .25s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body data-theme="forge">
+<canvas id="fx"></canvas>
+<div id="flash"></div>
+
+<div id="stage">
+  <header>
+    <div class="brand">IDEA<span>FORGE</span><small>inspiration slot machine</small></div>
+    <div class="rank">
+      <div class="rank-top"><span id="rankTitle">Novice</span><span id="xpText">0 XP</span></div>
+      <div class="xpbar"><div id="xpFill"></div></div>
+    </div>
+    <div class="hud">
+      <div class="chip-btn" id="streak" title="Streak — pull again within 45s to keep it">🔥 ×0</div>
+      <button class="chip-btn" id="hardBtn" title="Surprise Me Harder — much better odds of Rare+ and weirder combos">🌶 Harder</button>
+      <button class="chip-btn" id="soundBtn" title="Toggle sound">🔊</button>
+      <button class="chip-btn" id="codexBtn" title="Your discovered ideas">📚 Codex</button>
+    </div>
+  </header>
+
+  <div class="pull-wrap">
+    <button id="pull">PULL IDEA<small>SPACE / ENTER</small></button>
+  </div>
+
+  <div id="banner" class="hidden">✦ NEW DISCOVERY! ✦</div>
+
+  <article id="card" class="empty">The forge is lit. Pull the lever and see what the void hands you.</article>
+
+  <div class="row2">
+    <section class="panel"><h3>Recent pulls</h3><div id="history"></div></section>
+    <section class="panel"><h3>Today's challenges</h3><div id="chList"></div></section>
+  </div>
+
+  <footer>Everything is generated and stored locally. Nothing leaves this page.</footer>
+</div>
+
+<div id="codex" class="modal hidden">
+  <div class="modal-panel">
+    <div class="modal-head"><h2>📚 CODEX</h2><button class="chip-btn" id="codexClose">✕ Close</button></div>
+    <div id="codexStats"></div>
+    <div id="codexBody"></div>
+    <div class="modal-foot">
+      <span style="font-size:12px;color:var(--ink-dim)">Theme:</span>
+      <span id="themeRow"></span>
+      <span style="flex:1"></span>
+      <button class="chip-btn" id="resetBtn" title="Resets streak and today's challenge progress. Codex, rank and favorites are kept.">Reset session stats</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   IdeaForge — data tables
+   ===================================================================== */
+
+const RARITIES = [
+  {k:"common",    name:"Common",    color:"#aeb7c4", w:42,  hw:13, xp:10,  tier:0},
+  {k:"uncommon",  name:"Uncommon",  color:"#4ade80", w:27,  hw:19, xp:25,  tier:0},
+  {k:"rare",      name:"Rare",      color:"#38bdf8", w:16,  hw:25, xp:60,  tier:1},
+  {k:"epic",      name:"Epic",      color:"#c084fc", w:9,   hw:21, xp:150, tier:1},
+  {k:"legendary", name:"Legendary", color:"#fbbf24", w:5,   hw:15, xp:400, tier:2},
+  {k:"mythic",    name:"Mythic",    color:"#f43f5e", w:1,   hw:7,  xp:1000,tier:2},
+];
+
+const SETTINGS = [
+  "a drowned megacity","a generation ship at half power","a haunted Appalachian holler",
+  "a bureaucratic afterlife","a mushroom-forest kingdom","the first spring after a new ice age",
+  "a 1980s strip mall that never closes","an orbital junkyard","the inside of a dying god",
+  "a desert of rusted machines","a floating archipelago","a Soviet-era research town",
+  "a neon smuggling port","a medieval city under plague quarantine","a deep-sea drilling colony",
+  "a cardboard diorama world","a lighthouse at the edge of the map","an endless commuter train"
+];
+
+const ROLES = [
+  "a debt collector","the last cartographer","a defrocked priest","a union rep","a junior necromancer",
+  "a salvage captain","the royal food taster","a night-shift radio operator","the gravekeeper","an apprentice archivist"
+];
+
+const GENRES = [
+ {n:"RPG", nouns:["Oath","Crown","Pilgrim","Bloodline","Reliquary","Vow"], hooks:[
+   "You are {role} in {setting}, and every promise you make becomes a binding quest — break one and the world collects.",
+   "Your character sheet is a lie you told the guild; leveling up means keeping the story straight in {setting}.",
+   "Raise a doomed hero in {setting}: you play the mentor, and the stats you grind belong to someone who will leave you."
+ ], mech:[
+   "Promises function as quest contracts with enforced penalties",
+   "Per-faction reputation that never resets — the world keeps receipts",
+   "Dialogue skill checks spend the same resource pool as combat",
+   "Companions remember and reference your single worst decision",
+   "Gear degrades into heirlooms that accumulate story tags",
+   "No XP from kills — only from deeds that someone witnessed",
+   "Respec exists, but it is an in-world ritual with a real cost"
+ ]},
+ {n:"Roguelike", nouns:["Descent","Spiral","Catacomb","Gauntlet","Depths","Wake"], hooks:[
+   "Every death in {setting} leaves a corpse the next run must deal with — loot it, bury it, or fight what it became.",
+   "The dungeon is honest, but your map was drawn by a previous run's unreliable narrator.",
+   "You descend {setting} with one spell that mutates every floor — mastery means predicting your own toolkit."
+ ], mech:[
+   "Corpse persistence: your last three deaths physically exist in the world",
+   "Seeded daily runs with a shared leaderboard of one number",
+   "A single ability that mutates per floor along a visible rule",
+   "Meta-progression is knowledge only — zero stat carryover",
+   "Enemies statistically learn your favorite tactic across runs",
+   "Shops barter in run time: pay in seconds off the clock"
+ ]},
+ {n:"Metroidvania", nouns:["Labyrinth","Vessel","Atlas","Chrysalis","Rift","Hollowing"], hooks:[
+   "The map of {setting} physically folds — new abilities don't open doors, they refold the world.",
+   "You're the cartographer, not the hero: chart {setting} ahead of an NPC knight who dies wherever your map is wrong.",
+   "Every upgrade is a parasite with an opinion; the more mobility you gain, the less of you is left."
+ ], mech:[
+   "World-folding traversal instead of lock-and-key gating",
+   "Progress gated by knowledge the player carries, not items",
+   "Sequence breaks are canon, detected, and change dialogue",
+   "One seamless interconnected map; fast travel is the final reward",
+   "Bosses become re-fightable movement puzzles after victory",
+   "An upgrade-refusal path that is fully supported"
+ ]},
+ {n:"Puzzle", nouns:["Cipher","Lattice","Knot","Prism","Axiom","Tessera"], hooks:[
+   "Each level is a tiny machine in {setting}; solving it permanently changes the rules for every level after.",
+   "Undo is the mechanic — you can only move backward through causes, never forward through effects.",
+   "Two overlaid grids, one truth: what you toggle in the light rearranges the dark."
+ ], mech:[
+   "Rule mutations persist across the whole campaign",
+   "Undo-as-verb: rewinding costs a resource enemies also use",
+   "The level editor is secretly the final level",
+   "Hints exist but each one costs a piece of the story",
+   "About 8 rule words that combine into 60 hand-authored levels",
+   "A daily puzzle assembled from rules you have already learned"
+ ]},
+ {n:"Strategy", nouns:["Dominion","Banner","Bastion","Accord","Frontier","Regicide"], hooks:[
+   "A strategy game about losing well: victory is scored by what your civilization leaves behind in {setting}.",
+   "Command armies across {setting} through orders that take days to arrive — you are always planning for a battlefield that no longer exists.",
+   "Every unit is a named citizen with a day job; conscripting your blacksmith wins the battle and breaks your economy."
+ ], mech:[
+   "Order latency: commands arrive late and sometimes garbled",
+   "Legacy scoring — ruins, roads, and grudges outlive you",
+   "Named-citizen units drafted straight out of your economy",
+   "No fog of war; instead, fog of intent on enemy orders",
+   "Seasons rewrite the map graph (rivers freeze, passes close)",
+   "Diplomacy through hostage exchange and witnessed oaths"
+ ]},
+ {n:"Simulation", nouns:["District","Menagerie","Terrarium","Commons","Foundry","Parish"], hooks:[
+   "Simulate {setting} one household at a time — the city emerges from ten thousand small refusals.",
+   "A sandbox where physics, chemistry, and rumor are all the same propagation system.",
+   "You control no one in {setting}; you only control the infrastructure, and behavior follows the pipes."
+ ], mech:[
+   "Agents with needs plus a gossip layer that distorts information",
+   "Infrastructure-only interaction: you build, they decide",
+   "Fully inspectable causality — click anything, see exactly why",
+   "Save states are shareable scenario files others can remix",
+   "A real economy that emerges from only three base resources",
+   "Time controls down to per-agent slow motion"
+ ]},
+ {n:"Platformer", nouns:["Leap","Comet","Sprocket","Tumble","Zephyr","Ricochet"], hooks:[
+   "Your jump arc is drawn before you leap — commit to the line, then survive it.",
+   "Momentum is currency in {setting}: spend speed to open doors, and going slow is going broke.",
+   "You are the level: rearrange your own body's platforms while a tiny climber ascends you."
+ ], mech:[
+   "Draw-then-execute jump arcs with mid-air edit charges",
+   "Speed-as-currency gates that literally buy your momentum",
+   "A ghost of your best line races you in every room",
+   "A strict 3-color readability rule: hazard, safe, gold",
+   "Coyote time and input buffering exposed in a tuning menu",
+   "Rooms remember your death spots and taunt you gently"
+ ]},
+ {n:"Shooter", nouns:["Salvo","Caliber","Muzzle","Tracer","Breach","Payload"], hooks:[
+   "Every bullet you fire in {setting} still exists — rounds ricochet forever, and old shots are the real enemy.",
+   "One gun that reloads by catching what you killed with it.",
+   "Cover degrades honestly: the arena's destruction is your real ammo counter."
+ ], mech:[
+   "Persistent projectiles that never despawn within a level",
+   "Catch-your-shot reload loop that rewards positioning",
+   "Destructible cover as a spendable, shared economy",
+   "No hitscan anywhere — everything can be dodged on reaction",
+   "Enemies telegraph through sound a half-second before sight",
+   "A pacifist route scored on shots not fired"
+ ]},
+ {n:"Visual Novel", nouns:["Testimony","Letters","Solstice","Verdict","Reverie","Confession"], hooks:[
+   "The text itself is the crime scene — re-reading a chapter changes what was written.",
+   "Romance the suspects of a murder in {setting}; affection and alibi share one meter.",
+   "You read the same week from four heads; the truth lives in the contradictions, not the routes."
+ ], mech:[
+   "Mutable text: passages rewrite themselves when re-read",
+   "A single meter that is both affection and alibi",
+   "A contradiction journal that fills itself — sometimes wrongly",
+   "No flags: a fuzzy relationship model instead of switches",
+   "One true ending assembled from pieces of the false ones",
+   "Fully voiced with two narrators who disagree"
+ ]},
+ {n:"Idle / Incremental", nouns:["Dividend","Perpetua","Accretion","Surplus","Compound","Quota"], hooks:[
+   "An incremental where the numbers get smaller: shrink {setting} down to the last prime and see what's underneath.",
+   "Your factory keeps running while you're gone — but so does its labor movement.",
+   "Played by writing rules, not clicking: automate everything, then automate the automation."
+ ], mech:[
+   "Descending numbers — progress is division, not inflation",
+   "Offline time produces events with consequences, not just yield",
+   "A rule-scripting panel that is itself an unlockable",
+   "Prestige rewrites the verbs, not the multipliers",
+   "An actual reachable ending with credits",
+   "The UI decays if you over-automate and stop visiting"
+ ]},
+ {n:"Survival", nouns:["Thaw","Ration","Ember","Driftwood","Frostline","Scarcity"], hooks:[
+   "Survive {setting} where the real resource is body heat — every tool works by trading warmth away.",
+   "A survival game about being the last generation: you cannot win, but you can leave instructions.",
+   "The map never resets; your old shelters rot into landmarks, then into hazards."
+ ], mech:[
+   "A warmth economy: crafting, running, even thinking costs heat",
+   "Generational notes readable by your next character",
+   "Structural decay that turns bases into future dungeon floors",
+   "Hunger degrades perception and UI honesty before health",
+   "Independent NPC survivors who compete for your loot routes",
+   "Weather fronts visible days ahead — planning is the game"
+ ]},
+ {n:"Card Battler", nouns:["Gambit","Wildcard","Mulligan","Facedown","Suit","Deckhand"], hooks:[
+   "Your deck is a food chain: cards eat each other between fights, and what survives is what you shuffle.",
+   "Mana is time — expensive plays literally hand the enemy extra turns.",
+   "Build the deck during the battle: every enemy killed becomes a card, worded by how it died."
+ ], mech:[
+   "Deck ecology: cards predate, breed, and go extinct between fights",
+   "Time-as-mana initiative system",
+   "Kill-to-card generation with death-context keywords",
+   "Strict singleton runs — no duplicates, ever",
+   "Cards age with use: foiling, fraying, and retirement",
+   "Opponent decks built by the same rules you play under"
+ ]},
+ {n:"Racing", nouns:["Redline","Apex","Slipstream","Torque","Hairpin","Nitro"], hooks:[
+   "Racing through {setting} where the track is alive and remembers every lap — your racing line wears a physical groove.",
+   "No brakes, by design: every corner is solved with drift, geometry, or prayer.",
+   "You race the courier economy of {setting}: cargo shifts weight mid-corner and the delivery is the finish line."
+ ], mech:[
+   "Track wear: grooves, ruts, and grip evolve across a season",
+   "Physical cargo with real mass and shifting center of gravity",
+   "Rivals run on schedules and grudges instead of rubber-banding",
+   "One long point-to-point route per region, no loops",
+   "Ghost sharing via tiny replay files",
+   "A co-driver who calls corners — and can be wrong"
+ ]},
+ {n:"Sports", nouns:["Underdog","Season","Rookie","Playoff","Varsity","Offseason"], hooks:[
+   "A fictional sport built from three rules, played by {setting}'s rival districts — you manage, coach, and occasionally cheat.",
+   "Physics-first volleyball with grappling hooks; the net is a suggestion.",
+   "A career story where aging is the core mechanic: reflexes decay, wisdom compounds."
+ ], mech:[
+   "An invented sport whose rules the player can amend league-wide",
+   "Career decay curves: stats trade speed for judgement over time",
+   "A coach-call layer over direct control — trust your players or don't",
+   "Local 2v2 couch play as a first-class mode",
+   "Seeded season generation with rivalries that persist",
+   "Referees with personalities and known blind spots"
+ ]},
+ {n:"Horror", nouns:["Vigil","Basement","Lullaby","Seance","Marrow","Static"], hooks:[
+   "Horror in {setting} where the monster only exists inside your inventory screen.",
+   "You're safe while the lights are on — but the power grid is a resource you share with everything else in the house.",
+   "A found-save-file horror game: the previous player is still in there."
+ ], mech:[
+   "Menu-space threat: pausing is where you are most vulnerable",
+   "A shared power grid you and the entity both draw from",
+   "No combat — negotiation with rules you must infer from failure",
+   "Sanity affects UI honesty: bars, maps, and prompts start lying",
+   "One autosave slot that the game itself also uses",
+   "Sound design first: the monster is audio until the final act"
+ ]},
+ {n:"Adventure", nouns:["Voyage","Relic","Meridian","Lantern","Passage","Cartograph"], hooks:[
+   "A dialogue-free adventure across {setting}: you communicate by drawing symbols the world slowly learns to answer.",
+   "Point-and-click where the inventory is a promise list — items are favors owed, not objects held.",
+   "You're the ghost solving your own cold case in {setting}, possessing whatever the living leave unattended."
+ ], mech:[
+   "A drawn-symbol language with real, learnable grammar",
+   "Favor economy: every puzzle solved is a debt incurred",
+   "Possession as the verb set — each host has different hands",
+   "No fail states, only increasingly interesting detours",
+   "A journal that fills itself with confidently wrong theories",
+   "Environmental storytelling dense enough to skip all text"
+ ]},
+ {n:"Management", nouns:["Ledger","Franchise","Overtime","Payroll","Concession","Charter"], hooks:[
+   "Run the last lighthouse post office of {setting}: every parcel is a story and every delay is a plot twist.",
+   "A management sim where the staff manage you back — morale is a two-way ledger.",
+   "Grow a criminal front business where the legitimate side must actually be good, or the cover fails."
+ ], mech:[
+   "Parcels carry narrative payloads that mature if delayed",
+   "Two-way morale: staff review you, and it has teeth",
+   "Front-versus-back double economy with a shared cash drawer",
+   "Surprise audits in the style of health inspections",
+   "Staff with real schedules, lives, and resignation letters",
+   "Contracts you can breach — with consequences priced in"
+ ]},
+ {n:"Tactics", nouns:["Phalanx","Vanguard","Skirmish","Standoff","Flank","Garrison"], hooks:[
+   "Turn-based tactics where facing is everything and every unit shares one pool of morale — panic propagates along sightlines.",
+   "Command a squad through {setting} with orders written before the mission; mid-fight you can only shout, not control.",
+   "Tactics on a wound system, not hit points: every hit changes what a body can do, ally or enemy."
+ ], mech:[
+   "Sightline morale propagation — panic you can see coming",
+   "Pre-written orders plus a limited shout-interrupt budget",
+   "Locational wounds instead of HP bars",
+   "No to-hit RNG; all randomness lives in damage effects",
+   "Rotation and facing cost real action economy",
+   "Extraction is always an option and never free"
+ ]}
+];
+
+/* ---------- non-game categories ---------- */
+
+const SOFT = {
+ "Engine / Middleware": {
+  plat:["Cross-platform desktop","CLI + library, all platforms","Desktop, with browser-based editor","Windows / Linux / macOS","Library first, tools second"],
+  feats:[
+   "Hot-reload for everything: code, assets, data",
+   "Deterministic replays from a tiny input log",
+   "One-command export to a single distributable file",
+   "Built-in frame profiler overlay, on by default in dev",
+   "Scenes are plain text — diffable, mergeable, reviewable",
+   "A 10-minute tutorial that ships a real, tiny game"
+  ],
+  types:[
+   {n:"2D Engine", fuse:"And every scene is a plain text file you can diff and merge like code.", hooks:[
+     "A sprite-first 2D engine where scenes are plain text files — your level design gets code review."],
+    f:["Autotiling and 9-slice as core primitives","Pixel-perfect and smooth-scale render modes per layer","Aseprite files load natively, no export step"]},
+   {n:"3D Engine", fuse:"And the renderer is deliberately PSX-honest: fixed pipeline, affine textures, vertex wobble as a feature.", hooks:[
+     "A 3D engine the size of a demoscene binary — one file, fixed pipeline, PSX-honest, gloriously constrained."],
+    f:["A fixed-function-style pipeline that fits in your head","Vertex snapping and affine texturing as dials, not bugs","Whole games export under 5 MB"]},
+   {n:"Voxel Engine", fuse:"And the world is a database: every block is a row you can query.", hooks:[
+     "A voxel engine where the world is a database — query terrain like SQL, subscribe to chunks like a feed."],
+    f:["Block data queryable with a small SQL-ish language","Chunk streaming built for worlds bigger than RAM","Destruction and rebuild diffs are first-class events"]},
+   {n:"Tile-based Engine", fuse:"And autotiling rules are a grammar you write, not a menu you fight.", hooks:[
+     "A tile engine where rulesets are first-class assets: autotiling, wave-function fill, and game logic share one grammar."],
+    f:["Rule files drive autotiling, spawning, and win conditions","Wave-function-collapse fill with pinnable constraints","Every map is replayable as a deterministic build script"]},
+   {n:"Text-heavy Engine", fuse:"And typography is the physics: kerning, weight, and layout are the API.", hooks:[
+     "An engine for text games where typography is the physics system — words have weight, layout is level design."],
+    f:["Rich text layout with per-glyph animation hooks","A choice/state graph debugger with time travel","Screen-reader support generated for free from the model"]},
+   {n:"Battle-focused Engine", fuse:"And rollback netcode is in the box, tuned, and on by default.", hooks:[
+     "A combat sandbox engine: frame data, hitboxes, cancel tables, and rollback netcode — and absolutely nothing else."],
+    f:["Frame data authored in a spreadsheet-like editor","Hitbox visualization and hit-lab replay tooling built in","Rollback netcode preconfigured with quality telemetry"]},
+   {n:"Networking-first Engine", fuse:"And every object is networked by default — singleplayer is just a local server.", hooks:[
+     "An engine where every object is networked by default and singleplayer is just a server with one guest."],
+    f:["State replication by annotation, not boilerplate","Lag simulation baked into the dev loop","Server-authoritative by default, with clean prediction hooks"]},
+   {n:"Procedural Engine", fuse:"And nothing is placed by hand — everything is grown from seeds you can pin.", hooks:[
+     "Generators as the scene graph: nothing is placed, everything is grown from seeds you can pin, diff, and version."],
+    f:["Every generator seed is pinnable and diffable","Generation graphs edited visually, stored as text","Partial regeneration: reroll one hill, keep the village"]},
+   {n:"Data-driven Engine", fuse:"And the whole game is spreadsheets — hot-reloaded tables drive entities, UI, and balance.", hooks:[
+     "The whole game is spreadsheets: hot-reloaded tables drive entities, UI, and balance — designers never wait for a build."],
+    f:["CSV/JSON hot-reload with schema validation and diffs","Balance changes previewable against recorded play sessions","Content patches ship as data-only updates"]},
+   {n:"Scriptable Engine", fuse:"And shipping a game means shipping scripts — the host binary never changes.", hooks:[
+     "A tiny host binary plus one embedded language: shipping a game is shipping scripts, and modding is just... playing."],
+    f:["One embedded language with a great error story","The API surface fits on a single printed page","Mods and games are the same format — total conversion friendly"]}
+  ]
+ },
+ "Tool / Utility": {
+  plat:["CLI — Windows / macOS / Linux","Single static binary","Cross-platform desktop","Desktop + CLI companion","Self-hosted web UI"],
+  feats:[
+   "Single static binary, no installer, no runtime",
+   "Dry-run by default; nothing changes without --commit",
+   "Clean JSON output mode for scripting and pipelines",
+   "Every destructive operation is undoable",
+   "Config is one heavily commented file",
+   "Fast enough that you never see a spinner"
+  ],
+  types:[
+   {n:"CLI Utility", hooks:[
+     "A command-line tool that turns any folder of screenshots into a searchable, taggable visual index.",
+     "A CLI that watches a directory and narrates changes as a human-readable daily digest.",
+     "A tool that diffs two save files and explains what actually changed — in game terms, not bytes."],
+    f:["Works on a folder with zero setup","Output doubles as a static HTML report","Composable with pipes; respects exit codes"]},
+   {n:"Dev Tool", hooks:[
+     "A time-travel inspector for localStorage and IndexedDB — scrub your app's client state like a video.",
+     "A visualizer that turns your git history into an explorable, playable timeline.",
+     "A sprite-sheet linter that catches off-by-one frames and stray pixels before players do."],
+    f:["Attaches to real projects with no code changes","Findings link straight back to file and line","Snapshots exportable as shareable repro bundles"]},
+   {n:"Pipeline Tool", hooks:[
+     "A one-command asset pipeline: drop raw files in, get platform-ready atlases, mipmaps, and manifests out.",
+     "A build watcher that automatically bisects which asset broke the build — and tells you who touched it."],
+    f:["Content-addressed caching — nothing processes twice","Watch mode with sub-second incremental rebuilds","Manifest output any engine can consume"]},
+   {n:"Automation", hooks:[
+     "A rules engine for your filesystem: teach it your habits once, and it does the filing chores forever.",
+     "A clipboard historian with structured paste — it recognizes code, colors, tables, and paths, and offers the right transform."],
+    f:["Rules are readable sentences, stored as plain text","Full activity log with one-click revert","Runs quietly in the tray on a few MB of RAM"]},
+   {n:"Inspector", hooks:[
+     "An X-ray machine for binary formats: annotate bytes visually, then share the annotation as a living spec."],
+    f:["Hex view with structure overlay and color lanes","Annotations export as importable format specs","Template library for common game/file formats"]},
+   {n:"Converter", hooks:[
+     "The universal save-game translator: migrate player saves between versions of your own game with declared, testable rules."],
+    f:["Migration rules are versioned data, not code","Round-trip property tests generated automatically","A quarantine mode for saves it can't prove safe"]},
+   {n:"Generator", hooks:[
+     "A fake-data forge for game devs: NPC names, item stats, and dialogue stubs with consistent style per seed."],
+    f:["Style seeds keep whole datasets tonally coherent","Outputs CSV, JSON, or engine-ready tables","A 'lock this row' workflow for curating results"]}
+  ]
+ },
+ "Web / Desktop App": {
+  plat:["Web app (installable PWA)","Cross-platform desktop","Web + mobile PWA","Local-first desktop","Self-hosted single binary"],
+  feats:[
+   "Local-first: your data is a folder you own",
+   "No account required, ever",
+   "Complete keyboard control, mouse optional",
+   "One-click export to plain files (CSV / Markdown)",
+   "Optional end-to-end encrypted sync",
+   "Starts in under a second, works offline"
+  ],
+  types:[
+   {n:"Productivity", hooks:[
+     "A todo app where tasks decay unless fed — honesty by entropy: what you ignore visibly composts.",
+     "A calendar that automatically schedules recovery time after hard blocks, and defends it like a meeting."],
+    f:["Decay/compost cycle you can tune or disable","Weekly review generated as a readable letter","Tasks capture in two keystrokes from anywhere"]},
+   {n:"Finance", hooks:[
+     "An envelope-budget app that treats subscriptions as tenants — they pay rent in value, or you evict them."],
+    f:["Subscription 'lease reviews' on a schedule you set","Cash-flow forecast as a simple weather report","Imports bank CSVs with a learn-once mapper"]},
+   {n:"Health", hooks:[
+     "A sleep journal that correlates rest with what you actually did that day — not what you meant to log."],
+    f:["Passive capture first, questions second","Correlations shown with honest confidence levels","Data lives in one SQLite file you own"]},
+   {n:"Social", hooks:[
+     "A tiny social network capped at 12 people: a group house, not a feed — presence, notes on the fridge, shared chores."],
+    f:["Hard cap of 12 members per house, by design","No likes; only replies and shared rituals","Self-hostable on the cheapest possible VPS"]},
+   {n:"Learning", hooks:[
+     "A flashcard app where cards fight for survival — spaced repetition as an ecosystem with predators and seasons."],
+    f:["Cards weaken, merge, and go extinct honestly","Import from Markdown notes in one step","A garden view that makes progress feel spatial"]},
+   {n:"Journaling", hooks:[
+     "A diary that interviews you: one good question a day, with answers threaded across years so you can watch yourself change."],
+    f:["Question engine that learns what opens you up","On-this-day threads across all previous years","Entries encrypted at rest, exportable always"]},
+   {n:"Notes", hooks:[
+     "Notes as a garden you tend: links between ideas weaken unless walked, and the overgrown paths visibly fade."],
+    f:["Link strength decays and regrows with use","A daily 'walk' surfaces three forgotten notes","Everything is Markdown files in a folder"]}
+  ]
+ },
+ "Creative Software": {
+  plat:["Cross-platform desktop","Web app, works offline","Desktop + tablet pen support","Web + desktop wrapper","Runs from a USB stick"],
+  feats:[
+   "Autosaves every stroke; versions are free and infinite",
+   "Exports only open formats (PNG / SVG / WAV / JSON)",
+   "Every panel is detachable and every key remappable",
+   "Seeded randomness — every happy accident is reproducible",
+   "Works offline; files never leave the machine"
+  ],
+  types:[
+   {n:"Pixel Art Tool", hooks:[
+     "A pixel art editor built animation-first: every canvas is a timeline, and a still image is just a one-frame loop."],
+    f:["Onion skinning and sub-pixel motion preview","Palette constraints enforced like a linter","One-click export to sheets, GIFs, and engine atlases"]},
+   {n:"Music Tool", hooks:[
+     "A tracker where instruments are tiny code snippets — livecode your chiptunes, then play the song like an instrument."],
+    f:["Instruments are ~10-line scripts, hot-swappable mid-song","Pattern math: transpose, invert, and mutate as operations","Renders to WAV and to a tiny embeddable player"]},
+   {n:"Level Design Tool", hooks:[
+     "A universal level sketchpad: greybox with smart shapes and annotations, then export to whatever engine you aim it at."],
+    f:["Metric-true greyboxing with playtime estimates","Annotation layers for encounters, sightlines, and pacing","Exporters for the big engines plus plain JSON"]},
+   {n:"Shader Tool", hooks:[
+     "A shader playground with a patch-cable interface — nodes that compile to a single, readable GLSL file you can actually ship."],
+    f:["Node graphs compile to clean, commented GLSL","Live inputs: audio, webcam, MIDI, and time of day","Every patch is a sharable URL"]},
+   {n:"Writing Tool", hooks:[
+     "A drafting tool that versions paragraphs like git branches — write three versions of the scene, then merge your best sentences."],
+    f:["Paragraph-level branching with visual merge","A 'graveyard' where cut text stays searchable","Compile to clean Markdown, DOCX, or EPUB"]},
+   {n:"Animation Tool", hooks:[
+     "A bones-optional 2D animation tool: draw the arc you want, and the frames follow the line."],
+    f:["Arc-first workflow: motion paths before poses","Smear and squash primitives as brushes","Exports sprite sheets with engine-ready pivots"]},
+   {n:"Generative Art Tool", hooks:[
+     "A plotter-friendly generative art studio: seeds, sliders, and SVG out — built for people who like signing their prints."],
+    f:["Deterministic seeds with a breeding/gallery workflow","SVG and G-code export tuned for pen plotters","Slider changes preview at full quality, instantly"]},
+   {n:"Audio Tool", hooks:[
+     "A foley kit that turns your junk-drawer microphone takes into a tagged, searchable, game-ready SFX library."],
+    f:["Auto-slicing and silence-stripping on import","Tag by material, action, and intensity in one pass","Batch export with loudness normalization presets"]}
+  ]
+ },
+ "Experimental / Weird Tech": {
+  plat:["Any modern browser","Terminal (any OS)","A Raspberry Pi on your shelf","Whatever is lying around","One HTML file, anywhere"],
+  feats:[
+   "Zero-install: one file — double-click or open it",
+   "Works offline forever; no server to die",
+   "All state is a single human-readable file",
+   "Runs for weeks without attention",
+   "Quiet by design: it never notifies — you visit it",
+   "The code is short enough to be the documentation"
+  ],
+  types:[
+   {n:"Ambient Presence", hooks:[
+     "A game that lives entirely in your browser tab's title — a 20-character kingdom you rule between meetings.",
+     "A screensaver that is secretly a colony sim: your people only make progress while you're away.",
+     "A desktop wallpaper that simulates weather driven by your system load — storms mean your build is angry."],
+    f:["Progress measured in days, not sessions","Meaningful at a glance from across the room","Zero interaction required to stay alive"]},
+   {n:"Unconventional I/O", hooks:[
+     "A two-player game played over an audio cable — the sound itself is the netcode.",
+     "A musical instrument built from your keyboard's key-repeat settings.",
+     "A one-button game where press duration, rhythm, and silence are the entire vocabulary."],
+    f:["Uses hardware everyone already owns","Playable by ear, watchable as performance","Fails charmingly instead of erroring"]},
+   {n:"Filesystem Life", hooks:[
+     "A tamagotchi that lives in your git repo and feeds on commits — starve it and it leaves a note in your README.",
+     "A text world that runs in your shell prompt: every cd is a move, every directory a room.",
+     "A chess variant played by two people editing a shared text file — the format is the rulebook."],
+    f:["State is versioned along with your actual work","Perfectly inert when you want to be left alone","Multiplayer via any file-sync you already use"]},
+   {n:"Hidden / Steganographic", hooks:[
+     "An ARG that fits entirely inside one PNG's metadata — the image is the poster, the invitation, and the key.",
+     "A puzzle hidden across a website's error pages: 404s are doors, and the sitemap is lying."],
+    f:["Distributable as a single innocent-looking file","Solvable with free, common tools","Layered so the first secret teaches the second"]}
+  ]
+ }
+};
+
+/* ---------- twists ---------- */
+
+const TWISTS = {
+ game:[
+  [ // tier 0 — grounded constraints
+   "No engine — everything is hand-rolled, and the credits say so",
+   "The whole game fits in a single file",
+   "No text anywhere: icons, animation, and sound carry everything",
+   "Strictly one input: a single button",
+   "A hard 16-color palette, chosen once, never broken",
+   "One uninterrupted scene from title screen to credits",
+   "Save files are human-readable and meant to be edited",
+   "Every sound effect is mouth-made"
+  ],
+  [ // tier 1 — structural weirdness
+   "Everything is procedural — nothing is hand-placed",
+   "Multiplayer-only: the game refuses to be played alone",
+   "It runs in the terminal, and the terminal is the aesthetic",
+   "Fully diegetic UI — no HUD; every menu physically exists in-world",
+   "Time only advances when you act",
+   "Permadeath applies to the world, not the player",
+   "Played entirely through a fake operating system",
+   "The soundtrack is generated live from simulation state",
+   "One seed per week, shared globally — everyone plays the same world"
+  ],
+  [ // tier 2 — reality-bending
+   "The game plays itself; you only nudge probabilities",
+   "Every player on earth shares one persistent world instance",
+   "It must run on hardware from before 2005",
+   "The entire game state fits in a URL — sharing a link shares the run",
+   "Deleting your save is a mechanic, and the game knows when you do it",
+   "Asynchronous multiplayer via save files you email to friends",
+   "The game edits its own source code as you play",
+   "Real-world weather at the player's location drives the simulation",
+   "It only runs between midnight and 6 a.m.",
+   "The printed manual is the real game; the executable just checks your answers"
+  ]
+ ],
+ soft:[
+  [
+   "Ships as a single HTML file",
+   "Zero dependencies — standard library only",
+   "The config file is the entire UI",
+   "Everything is keyboard-driven; the mouse is decorative",
+   "The whole thing fits under 100 KB",
+   "Installs nothing; leaves no trace when deleted"
+  ],
+  [
+   "Runs entirely in the terminal, beautifully",
+   "Local-first with peer-to-peer sync — there is no server",
+   "Plugins are just folders of scripts",
+   "It's secretly a library — the app is a demo of its own API",
+   "Every action is undoable, forever, across sessions",
+   "One binary is the client, the server, and the docs"
+  ],
+  [
+   "It modifies its own source, and forking it is the intended workflow",
+   "All state lives in the URL — bookmarks are backups",
+   "It runs on a Raspberry Pi magneted to your fridge",
+   "The documentation is generated by the tool running on itself",
+   "It works over email — inbox in, outbox out",
+   "It doubles as a screensaver when idle"
+  ]
+ ]
+};
+
+/* ---------- platforms / scope / categories ---------- */
+
+const GAME_PLAT = ["PC (Steam)","Web (itch.io)","PC + Steam Deck","Mobile, portrait, one-handed","Windows / Linux / macOS","PC + Web"];
+const WILD_PLAT = ["Terminal, any OS","A Raspberry Pi handheld","An e-ink device","A browser extension","A USB stick — runs anywhere, saves to itself"];
+
+const SCOPES = [
+  {n:"Weekend prototype", d:"48 hours to a playable core"},
+  {n:"Small (1–3 months)", d:"one tight loop, polished"},
+  {n:"Medium (3–9 months)", d:"a real release with a store page"},
+  {n:"Ambitious", d:"vertical slice first — then decide if it deserves a year"}
+];
+
+const CATS = [["Game",40],["Engine / Middleware",12],["Tool / Utility",13],["Web / Desktop App",12],["Creative Software",12],["Experimental / Weird Tech",11]];
+
+/* ---------- titles ---------- */
+
+const T_ADJ = ["Hollow","Feral","Neon","Quiet","Crimson","Static","Velvet","Broken","Last","Little","Grim","Lucky","Paper","Solar","Umbral","Rust","Glass","Wild","Sunken","Molten"];
+const T_SUB = ["Afterlight","Protocol","Requiem","Overdrive","Forever","Zero","Ultra","Deluxe","Eternal","Reforged","99","Under the Ice","of the Deep","Vespers"];
+const T_PRE = ["Gloom","Rust","Star","Ash","Moth","Grave","Sun","Wire","Salt","Hex","Iron","Fen","Bone","Thorn","Cinder","Murk"];
+const T_SUF = ["fall","ward","spire","light","bound","forge","march","rot","song","deep","haven","works","reach","vein"];
+const S_PRE = ["patch","loom","grid","flux","forge","drift","husk","node","byte","snap","quill","slate","prism","murk","ember","kelp"];
+const S_SUF = ["kit","bay","lab","deck","smith","works","box","core","weave","ling","pit","mark"];
+
+/* ---------- progression ---------- */
+
+const LEVELS = [
+  {t:"Novice", xp:0},{t:"Apprentice", xp:150},{t:"Ideator", xp:500},{t:"Visionary", xp:1400},
+  {t:"Architect", xp:3200},{t:"Legend", xp:7000},{t:"Mythic Creator", xp:15000}
+];
+
+const THEMES = [
+  {k:"forge", c:"#f5b356", hint:"default"},
+  {k:"ice",   c:"#67e8f9", hint:"Pull 3 Rare-or-better in a day"},
+  {k:"toxic", c:"#a3e635", hint:"Hit an 8-pull streak"},
+  {k:"ember", c:"#ff6b35", hint:"Pull a Legendary or Mythic"},
+  {k:"royal", c:"#a78bfa", hint:"Favorite an idea"}
+];
+
+const CHALLENGES = [
+  {id:"pull10",  txt:"Pull 10 ideas",              target:10, stat:"pullsToday",     reward:200},
+  {id:"rare3",   txt:"Pull 3 Rare-or-better ideas",target:3,  stat:"rarePlusToday",  reward:250, unlock:"ice"},
+  {id:"streak8", txt:"Hit an 8-pull streak",       target:8,  stat:"bestStreakToday",reward:250, unlock:"toxic"},
+  {id:"legend1", txt:"Pull a Legendary or Mythic", target:1,  stat:"legendToday",    reward:400, unlock:"ember"},
+  {id:"disc6",   txt:"Discover 6 new ideas",       target:6,  stat:"discToday",      reward:250},
+  {id:"fav1",    txt:"Favorite an idea",           target:1,  stat:"favToday",       reward:150, unlock:"royal"}
+];
+
+/* =====================================================================
+   utils
+   ===================================================================== */
+
+const $ = id => document.getElementById(id);
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+function weighted(pairs){
+  let total = 0; for (const p of pairs) total += p[1];
+  let r = Math.random()*total;
+  for (const p of pairs){ r -= p[1]; if (r < 0) return p[0]; }
+  return pairs[pairs.length-1][0];
+}
+function sample(arr, n){
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a.slice(0, Math.min(n, a.length));
+}
+const fill = s => s.replace(/\{setting\}/g, () => rnd(SETTINGS)).replace(/\{role\}/g, () => rnd(ROLES));
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+function hash(s){ let h=5381; for(let i=0;i<s.length;i++){ h=((h<<5)+h+s.charCodeAt(i))|0; } return (h>>>0).toString(36); }
+
+/* =====================================================================
+   state
+   ===================================================================== */
+
+const KEY = "ideaforge_v1";
+const freshStats = () => ({pullsToday:0, rarePlusToday:0, bestStreakToday:0, legendToday:0, discToday:0, favToday:0});
+let S;
+function loadState(){
+  try { S = JSON.parse(localStorage.getItem(KEY)) || null; } catch(e){ S = null; }
+  if (!S || S.v !== 1){
+    S = {v:1, xp:0, pulls:0, streak:0, bestStreak:0, lastPullAt:0,
+         codex:[], favs:[], seen:{}, unlocked:["forge"], theme:"forge",
+         sound:true, hard:false, day:"", daily:[], done:{}, stats:freshStats(), nextId:1};
+  }
+  const today = new Date().toISOString().slice(0,10);
+  if (S.day !== today){
+    S.day = today;
+    S.stats = freshStats();
+    S.done = {};
+    S.daily = sample(CHALLENGES.map(c=>c.id), 3);
+  }
+  if (!S.unlocked.includes(S.theme)) S.theme = "forge";
+}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} };
+
+/* =====================================================================
+   idea generation
+   ===================================================================== */
+
+function rollRarity(){
+  return weighted(RARITIES.map(r => [r, S.hard ? r.hw : r.w]));
+}
+
+function gameTitle(gA, gB, mythic){
+  const noun = rnd(gA.nouns.concat(gB ? gB.nouns : []));
+  const comp = rnd(T_PRE)+rnd(T_SUF);
+  if (mythic) return comp.toUpperCase();
+  const pat = Math.floor(Math.random()*5);
+  if (pat===0) return rnd(T_ADJ)+" "+noun;
+  if (pat===1) return "The "+rnd(T_ADJ)+" "+noun;
+  if (pat===2) return comp;
+  if (pat===3) return noun+": "+rnd(T_SUB);
+  return comp+" "+rnd(T_SUB);
+}
+function softTitle(cat, mythic){
+  const name = rnd(S_PRE)+rnd(S_SUF);
+  if (mythic) return name.toUpperCase();
+  if (cat==="Tool / Utility") return name;
+  if (cat==="Creative Software" && Math.random()<0.4) return cap(rnd(S_PRE))+" "+rnd(["Studio","Lab","Deck","Bench"]);
+  return cap(name);
+}
+
+function featureCount(r){ return r.tier===0 ? 3 : r.tier===1 ? 4 : 5; }
+
+function pickScope(r){
+  const w = [30,34,25,11];
+  w[2]+=r.tier*5; w[3]+=r.tier*7;
+  return weighted(SCOPES.map((s,i)=>[s,w[i]]));
+}
+
+function buildGame(r){
+  const A = rnd(GENRES);
+  let B = null;
+  const fuse = r.tier===2 || (r.k==="epic" && Math.random()<0.4);
+  if (fuse){ do { B = rnd(GENRES); } while (B===A); }
+  const hook = fill(rnd(A.hooks));
+  let mech;
+  if (B){
+    const nA = Math.ceil(featureCount(r)/2);
+    mech = sample(A.mech, nA).concat(sample(B.mech, featureCount(r)-nA));
+  } else {
+    mech = sample(A.mech, featureCount(r));
+  }
+  const twists = [rnd(TWISTS.game[r.tier])];
+  if (r.k==="mythic"){
+    let t2; do { t2 = rnd(TWISTS.game[2]); } while (t2===twists[0]);
+    twists.push(t2);
+  }
+  const plat = (r.tier===2 && Math.random()<0.45) ? rnd(WILD_PLAT) : rnd(GAME_PLAT);
+  return {
+    cat:"Game", type: B ? A.n+" × "+B.n : A.n,
+    title: gameTitle(A, B, r.k==="mythic"),
+    hook, feats: mech, twists, plat, scope: pickScope(r)
+  };
+}
+
+function buildSoft(cat, r){
+  const data = SOFT[cat];
+  const A = rnd(data.types);
+  let hook = fill(rnd(A.hooks));
+  let type = A.n;
+  if (cat==="Engine / Middleware" && r.tier===2){
+    let B; do { B = rnd(data.types); } while (B===A);
+    type = A.n.replace(" Engine","")+"-"+B.n.replace(" Engine","")+" Engine";
+    hook = hook.replace(/\.$/,"") + ". " + B.fuse;
+  }
+  const n = featureCount(r);
+  const own = sample(A.f, Math.min(A.f.length, n-1));
+  const pool = data.feats.filter(f => !own.includes(f));
+  const feats = own.concat(sample(pool, n - own.length));
+  const twists = [rnd(TWISTS.soft[r.tier])];
+  if (r.k==="mythic"){
+    let t2; do { t2 = rnd(TWISTS.soft[2]); } while (t2===twists[0]);
+    twists.push(t2);
+  }
+  const plat = (r.tier===2 && Math.random()<0.35) ? rnd(WILD_PLAT) : rnd(data.plat);
+  return { cat, type, title: softTitle(cat, r.k==="mythic"), hook, feats, twists, plat, scope: pickScope(r) };
+}
+
+function generateIdea(){
+  const r = rollRarity();
+  const cat = weighted(CATS);
+  const body = cat==="Game" ? buildGame(r) : buildSoft(cat, r);
+  const idea = Object.assign({ id:S.nextId++, rar:r.k, ts:Date.now() }, body);
+  idea.sig = hash([idea.cat, idea.type, idea.hook, idea.twists.join("|")].join("~"));
+  return idea;
+}
+
+/* =====================================================================
+   effects: audio, particles, shake, flash
+   ===================================================================== */
+
+let AC = null;
+function tone(f, d, t, type, g){
+  if (!S.sound) return;
+  try {
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    if (AC.state==="suspended") AC.resume();
+    const o = AC.createOscillator(), ga = AC.createGain();
+    o.type = type||"square"; o.frequency.value = f;
+    const t0 = AC.currentTime + (t||0);
+    ga.gain.setValueAtTime(g||0.045, t0);
+    ga.gain.exponentialRampToValueAtTime(0.0001, t0 + (d||0.12));
+    o.connect(ga); ga.connect(AC.destination);
+    o.start(t0); o.stop(t0 + (d||0.12) + 0.03);
+  } catch(e){}
+}
+function raritySound(k){
+  if (k==="common") tone(330,0.09);
+  else if (k==="uncommon") tone(392,0.08), tone(494,0.1,0.07);
+  else if (k==="rare") tone(523,0.09), tone(659,0.12,0.08);
+  else if (k==="epic") tone(523,0.08), tone(659,0.08,0.07), tone(784,0.16,0.14);
+  else if (k==="legendary"){ tone(659,0.1,0,"triangle",0.06); tone(880,0.1,0.1,"triangle",0.06); tone(1175,0.3,0.2,"triangle",0.06); }
+  else { tone(220,0.25,0,"sawtooth",0.05); tone(165,0.3,0.15,"sawtooth",0.05); tone(110,0.6,0.3,"sawtooth",0.06); tone(1760,0.4,0.55,"sine",0.03); }
+}
+
+const fx = $("fx"), fctx = fx.getContext("2d");
+let parts = [], fxRunning = false;
+function fxResize(){ fx.width = innerWidth; fx.height = innerHeight; }
+addEventListener("resize", fxResize); fxResize();
+function burst(x, y, color, n, opt){
+  opt = opt||{};
+  for (let i=0;i<n;i++){
+    const a = Math.random()*Math.PI*2, sp = (opt.slow?1.5:2.5)+Math.random()*(opt.slow?3:6);
+    let px=x, py=y, vx=Math.cos(a)*sp, vy=Math.sin(a)*sp-2;
+    if (opt.implode){ const rr = 120+Math.random()*160; px = x+Math.cos(a)*rr; py = y+Math.sin(a)*rr; vx = (x-px)/22; vy = (y-py)/22; }
+    parts.push({x:px,y:py,vx,vy,g:opt.implode?0:0.12,life:1,decay:0.012+Math.random()*0.02,
+                r:2+Math.random()*3,c:color});
+  }
+  if (!fxRunning){ fxRunning = true; requestAnimationFrame(fxTick); }
+}
+function fxTick(){
+  fctx.clearRect(0,0,fx.width,fx.height);
+  parts = parts.filter(p => p.life > 0);
+  for (const p of parts){
+    p.x += p.vx; p.y += p.vy; p.vy += p.g; p.life -= p.decay;
+    fctx.globalAlpha = Math.max(p.life,0);
+    fctx.fillStyle = p.c;
+    fctx.fillRect(p.x, p.y, p.r, p.r);
+  }
+  fctx.globalAlpha = 1;
+  if (parts.length){ requestAnimationFrame(fxTick); } else { fxRunning = false; fctx.clearRect(0,0,fx.width,fx.height); }
+}
+function cardCenter(){
+  const b = $("card").getBoundingClientRect();
+  return [b.left + b.width/2, Math.min(b.top + 120, b.top + b.height/2)];
+}
+function shake(big){
+  const st = $("stage");
+  st.classList.remove("shake","shake-big"); void st.offsetWidth;
+  st.classList.add(big ? "shake-big" : "shake");
+}
+function flash(mythic){
+  const f = $("flash");
+  f.classList.toggle("mythic", !!mythic);
+  f.classList.remove("on"); void f.offsetWidth; f.classList.add("on");
+}
+function rarityFx(idea){
+  const r = RARITIES.find(x=>x.k===idea.rar);
+  raritySound(r.k);
+  if (r.tier===0) return;
+  const [cx, cy] = cardCenter();
+  if (r.k==="rare") burst(cx, cy, r.color, 30);
+  else if (r.k==="epic") burst(cx, cy, r.color, 55);
+  else if (r.k==="legendary"){ burst(cx, cy, r.color, 90); burst(cx, cy, "#fff7e0", 30); flash(false); shake(false); }
+  else { burst(cx, cy, r.color, 60, {implode:true}); setTimeout(()=>burst(cx, cy, r.color, 110), 350); setTimeout(()=>burst(cx, cy, "#1b0208", 40),380); flash(true); shake(true); }
+}
+
+/* =====================================================================
+   progression + challenges
+   ===================================================================== */
+
+function levelInfo(xp){
+  let li = 0;
+  for (let i=0;i<LEVELS.length;i++) if (xp >= LEVELS[i].xp) li = i;
+  const cur = LEVELS[li], next = LEVELS[li+1] || null;
+  const pct = next ? Math.min(100, 100*(xp-cur.xp)/(next.xp-cur.xp)) : 100;
+  return {li, cur, next, pct};
+}
+function grantXp(n){
+  const before = levelInfo(S.xp).li;
+  S.xp += Math.round(n);
+  const after = levelInfo(S.xp).li;
+  if (after > before){
+    toast("⬆ RANK UP — "+LEVELS[after].t+"!");
+    tone(523,0.1,0,"triangle",0.06); tone(784,0.1,0.12,"triangle",0.06); tone(1046,0.3,0.24,"triangle",0.06);
+    const [cx,cy]=cardCenter(); burst(cx, cy-60, getComputedStyle(document.body).getPropertyValue("--accent").trim()||"#f5b356", 50);
+  }
+  renderRank();
+}
+function streakMult(){ return 1 + 0.1*Math.min(Math.max(S.streak-1,0), 10); }
+
+function tickChallenges(){
+  for (const id of S.daily){
+    const c = CHALLENGES.find(x=>x.id===id);
+    if (!c || S.done[id]) continue;
+    if ((S.stats[c.stat]||0) >= c.target){
+      S.done[id] = true;
+      grantXp(c.reward);
+      if (c.unlock && !S.unlocked.includes(c.unlock)){
+        S.unlocked.push(c.unlock);
+        toast("🏆 Challenge complete — theme unlocked: "+c.unlock+"! (+"+c.reward+" XP)");
+      } else {
+        toast("🏆 Challenge complete! +"+c.reward+" XP");
+      }
+    }
+  }
+  renderChallenges();
+}
+
+/* =====================================================================
+   rendering
+   ===================================================================== */
+
+let current = null, history = [];
+
+function renderRank(){
+  const info = levelInfo(S.xp);
+  $("rankTitle").textContent = info.cur.t + " · Lv "+(info.li+1);
+  $("xpText").textContent = info.next ? (S.xp+" / "+info.next.xp+" XP") : (S.xp+" XP · MAX");
+  $("xpFill").style.width = info.pct+"%";
+}
+function renderStreak(){
+  const el = $("streak");
+  el.textContent = "🔥 ×"+S.streak;
+  el.classList.toggle("fire", S.streak>=5);
+  el.classList.toggle("hi", S.streak>=10);
+}
+function renderCard(idea, animate){
+  const card = $("card");
+  const r = RARITIES.find(x=>x.k===idea.rar);
+  const faved = S.favs.includes(idea.sig);
+  card.className = "r-"+idea.rar;
+  card.innerHTML =
+    '<span class="rar-tag">'+r.name+'</span>'+
+    '<h2 id="ideaTitle"></h2>'+
+    '<div class="meta"><b></b> · <span></span></div>'+
+    '<p class="hook"></p>'+
+    '<div class="sect">Key features</div><ul id="feats"></ul>'+
+    '<div class="sect">'+(idea.twists.length>1?"Twists":"Twist / Constraint")+'</div>'+
+    idea.twists.map(()=>'<div class="twist"></div>').join("")+
+    '<div class="kv"><div>Platform: <b class="kv-plat"></b></div><div>Scope: <b class="kv-scope"></b></div></div>'+
+    '<div class="actions">'+
+      '<button class="chip-btn" id="copyBtn">📋 Copy</button>'+
+      '<button class="chip-btn" id="mdBtn">⬇ Markdown</button>'+
+      '<button class="chip-btn'+(faved?" faved":"")+'" id="favBtn">'+(faved?"★ Favorited":"☆ Favorite")+'</button>'+
+    '</div>';
+  card.querySelector("#ideaTitle").textContent = idea.title;
+  card.querySelector(".meta b").textContent = idea.cat;
+  card.querySelector(".meta span").textContent = idea.type;
+  card.querySelector(".hook").textContent = idea.hook;
+  const ul = card.querySelector("#feats");
+  for (const f of idea.feats){ const li=document.createElement("li"); li.textContent=f; ul.appendChild(li); }
+  const tw = card.querySelectorAll(".twist");
+  idea.twists.forEach((t,i)=>{ tw[i].textContent = t; });
+  card.querySelector(".kv-plat").textContent = idea.plat;
+  card.querySelector(".kv-scope").textContent = idea.scope.n+" — "+idea.scope.d;
+  card.querySelector("#copyBtn").onclick = () => copyText(formatText(idea), "Idea copied!");
+  card.querySelector("#mdBtn").onclick = () => copyText(formatMd(idea), "Markdown copied!");
+  card.querySelector("#favBtn").onclick = () => toggleFav(idea);
+  if (animate){
+    card.classList.remove("pop","mythic-anim"); void card.offsetWidth;
+    card.classList.add(idea.rar==="mythic" ? "mythic-anim" : "pop");
+  }
+}
+function renderHistory(){
+  const h = $("history");
+  h.innerHTML = "";
+  if (!history.length){ h.innerHTML = '<div style="color:var(--ink-dim);font-size:13px">Nothing yet — pull something.</div>'; return; }
+  for (const idea of history){
+    const r = RARITIES.find(x=>x.k===idea.rar);
+    const b = document.createElement("button");
+    b.className = "hist-chip"; b.title = idea.hook;
+    b.innerHTML = '<i class="dot"></i><span></span><em></em>';
+    b.querySelector(".dot").style.background = r.color;
+    b.querySelector("span").textContent = idea.title+" — "+idea.type;
+    b.querySelector("em").textContent = r.name;
+    b.onclick = () => { current = idea; renderCard(idea, true); };
+    h.appendChild(b);
+  }
+}
+function renderChallenges(){
+  const box = $("chList");
+  box.innerHTML = "";
+  for (const id of S.daily){
+    const c = CHALLENGES.find(x=>x.id===id);
+    if (!c) continue;
+    const p = Math.min(S.stats[c.stat]||0, c.target);
+    const d = document.createElement("div");
+    d.className = "ch"+(S.done[id]?" done":"");
+    d.innerHTML = '<div class="txt"></div><div class="bar"><i></i></div><div class="sub"></div>';
+    d.querySelector(".txt").textContent = c.txt;
+    d.querySelector(".bar i").style.width = (100*p/c.target)+"%";
+    d.querySelector(".sub").textContent = p+" / "+c.target+" · +"+c.reward+" XP"+(c.unlock?" · unlocks '"+c.unlock+"' theme":"");
+    box.appendChild(d);
+  }
+}
+function renderCodex(){
+  const total = S.codex.length;
+  $("codexStats").textContent = total+" discovered · "+S.pulls+" total pulls · best streak ×"+S.bestStreak+" · "+S.favs.length+" favorites";
+  const body = $("codexBody");
+  body.innerHTML = "";
+  const groups = [["Favorites", S.codex.filter(i=>S.favs.includes(i.sig)), "var(--r-legendary)"]];
+  for (let i=RARITIES.length-1;i>=0;i--){
+    const r = RARITIES[i];
+    groups.push([r.name, S.codex.filter(x=>x.rar===r.k), r.color]);
+  }
+  for (const [label, items, color] of groups){
+    if (!items.length) continue;
+    const g = document.createElement("div");
+    g.className = "cdx-group";
+    g.innerHTML = '<h4></h4><div class="cdx-grid"></div>';
+    g.querySelector("h4").textContent = label+" ("+items.length+")";
+    g.querySelector("h4").style.color = color;
+    const grid = g.querySelector(".cdx-grid");
+    for (const idea of items.slice().reverse()){
+      const b = document.createElement("button");
+      b.className = "cdx-item"+(S.favs.includes(idea.sig)?" fav":"");
+      b.textContent = idea.title+" — "+idea.type;
+      b.title = idea.hook;
+      b.onclick = () => { current = idea; renderCard(idea, true); closeCodex(); };
+      grid.appendChild(b);
+    }
+    body.appendChild(g);
+  }
+  if (!body.children.length) body.innerHTML = '<div style="color:var(--ink-dim)">Empty. The void awaits your first pull.</div>';
+  const tr = $("themeRow");
+  tr.innerHTML = "";
+  for (const t of THEMES){
+    const unlocked = S.unlocked.includes(t.k);
+    const b = document.createElement("button");
+    b.className = "theme-dot"+(S.theme===t.k?" sel":"")+(unlocked?"":" locked");
+    b.style.background = t.c;
+    b.title = unlocked ? t.k : "Locked — "+t.hint;
+    b.onclick = () => { if (!unlocked) return; S.theme=t.k; document.body.dataset.theme=t.k; save(); renderCodex(); };
+    tr.appendChild(b);
+  }
+}
+
+/* ---------- toast / clipboard / formats ---------- */
+
+let toastTimer = null;
+function toast(msg){
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2400);
+}
+function copyText(text, msg){
+  const done = () => toast(msg);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text, done));
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done){
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.position="fixed"; ta.style.opacity="0";
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch(e){ toast("Copy failed — select manually"); }
+  document.body.removeChild(ta);
+}
+function formatText(i){
+  const r = RARITIES.find(x=>x.k===i.rar);
+  return ["★ "+r.name.toUpperCase()+" IDEA — IdeaForge","",
+    "Title: "+i.title, "Category: "+i.cat, "Type: "+i.type, "",
+    "Hook: "+i.hook, "", "Key features:", ...i.feats.map(f=>"  - "+f), "",
+    (i.twists.length>1?"Twists:":"Twist:")+" "+i.twists.join(" / "),
+    "Platform: "+i.plat, "Scope: "+i.scope.n+" — "+i.scope.d].join("\n");
+}
+function formatMd(i){
+  const r = RARITIES.find(x=>x.k===i.rar);
+  return ["## "+i.title, "", "**"+r.name+" · "+i.cat+" · "+i.type+"**", "",
+    "> "+i.hook, "", "**Key features**", ...i.feats.map(f=>"- "+f), "",
+    "**"+(i.twists.length>1?"Twists":"Twist")+":** "+i.twists.join(" · "), "",
+    "**Platform:** "+i.plat+"  ", "**Scope:** "+i.scope.n+" — "+i.scope.d].join("\n");
+}
+
+/* ---------- favorites / codex maintenance ---------- */
+
+function toggleFav(idea){
+  const ix = S.favs.indexOf(idea.sig);
+  if (ix >= 0) S.favs.splice(ix,1);
+  else { S.favs.push(idea.sig); S.stats.favToday++; tickChallenges(); }
+  save();
+  renderCard(idea, false);
+}
+function addToCodex(idea){
+  const isNew = !S.seen[idea.sig];
+  if (isNew){
+    S.seen[idea.sig] = true;
+    S.codex.push(idea);
+    S.stats.discToday++;
+    if (S.codex.length > 400){
+      const cut = S.codex.findIndex(i=>!S.favs.includes(i.sig));
+      if (cut >= 0){ delete S.seen[S.codex[cut].sig]; S.codex.splice(cut,1); }
+    }
+  }
+  return isNew;
+}
+
+/* =====================================================================
+   the pull
+   ===================================================================== */
+
+function pull(){
+  const now = Date.now();
+  S.streak = (now - S.lastPullAt <= 45000) ? S.streak+1 : 1;
+  S.lastPullAt = now;
+  S.bestStreak = Math.max(S.bestStreak, S.streak);
+  S.stats.bestStreakToday = Math.max(S.stats.bestStreakToday, S.streak);
+
+  const idea = generateIdea();
+  current = idea;
+  S.pulls++;
+  S.stats.pullsToday++;
+  const r = RARITIES.find(x=>x.k===idea.rar);
+  if (r.tier >= 1) S.stats.rarePlusToday++;
+  if (r.tier === 2) S.stats.legendToday++;
+
+  const isNew = addToCodex(idea);
+  history.unshift(idea);
+  if (history.length > 10) history.pop();
+
+  renderCard(idea, true);
+  renderHistory();
+  renderStreak();
+  rarityFx(idea);
+
+  const banner = $("banner");
+  banner.classList.toggle("hidden", !isNew);
+  if (isNew){ banner.classList.remove("show"); void banner.offsetWidth; banner.classList.add("show"); }
+
+  grantXp(r.xp * streakMult());
+  tickChallenges();
+  save();
+}
+
+/* =====================================================================
+   wiring
+   ===================================================================== */
+
+function openCodex(){ renderCodex(); $("codex").classList.remove("hidden"); }
+function closeCodex(){ $("codex").classList.add("hidden"); }
+
+function init(){
+  loadState();
+  document.body.dataset.theme = S.theme;
+  $("soundBtn").textContent = S.sound ? "🔊" : "🔇";
+  $("hardBtn").classList.toggle("active", S.hard);
+  renderRank(); renderStreak(); renderChallenges(); renderHistory();
+
+  $("pull").addEventListener("click", pull);
+  $("hardBtn").addEventListener("click", () => {
+    S.hard = !S.hard;
+    $("hardBtn").classList.toggle("active", S.hard);
+    toast(S.hard ? "🌶 Surprise Me Harder: ON — the void leans in." : "Surprise Me Harder: off");
+    save();
+  });
+  $("soundBtn").addEventListener("click", () => {
+    S.sound = !S.sound;
+    $("soundBtn").textContent = S.sound ? "🔊" : "🔇";
+    if (S.sound) tone(659,0.08);
+    save();
+  });
+  $("codexBtn").addEventListener("click", openCodex);
+  $("codexClose").addEventListener("click", closeCodex);
+  $("codex").addEventListener("click", e => { if (e.target === $("codex")) closeCodex(); });
+  $("resetBtn").addEventListener("click", () => {
+    S.streak = 0; S.lastPullAt = 0; S.stats = freshStats(); S.done = {};
+    S.daily = sample(CHALLENGES.map(c=>c.id), 3);
+    save(); renderStreak(); renderChallenges(); renderCodex();
+    toast("Session stats reset. Codex and rank kept.");
+  });
+  addEventListener("keydown", e => {
+    if (e.key === "Escape"){ closeCodex(); return; }
+    if (e.key !== " " && e.key !== "Enter") return;
+    if (!$("codex").classList.contains("hidden")) return;
+    const tag = document.activeElement && document.activeElement.tagName;
+    if (e.key === "Enter" && tag === "BUTTON" && document.activeElement.id !== "pull") return;
+    e.preventDefault();
+    const p = $("pull");
+    p.classList.add("pressed");
+    setTimeout(()=>p.classList.remove("pressed"), 110);
+    pull();
+  });
+  save();
+}
+init();
+</script>
+</body>
+</html>

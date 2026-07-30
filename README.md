@@ -1,5 +1,11 @@
 # IdeaForge
 
+
+<!-- wip-contact-banner -->
+> **Work in progress.** This is an active side project alongside my main game development, so progress is intermittent — expect bugs, missing features, and rough edges.
+>
+> Bug reports, feedback, or contributions are welcome via GitHub issues/PRs, or email **midwestmysterymeatstudios@gmail.com**. If you'd like to support the work, tips are appreciated but never expected.
+
 ![IdeaForge pull screen — rarity card, XP bar, daily challenges](screenshots/gameplay.png)
 
 A single-file, zero-dependency **inspiration slot machine** for game developers and tool builders. One big button. Every pull generates a coherent, usable project idea — with a rarity system, XP, streaks, daily challenges, and a persistent codex of everything you've discovered.

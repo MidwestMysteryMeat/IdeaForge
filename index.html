@@ -1209,8 +1209,9 @@ function addToCodex(idea){
     S.codex.push(idea);
     S.stats.discToday++;
     if (S.codex.length > 400){
-      const cut = S.codex.findIndex(i=>!S.favs.includes(i.sig));
-      if (cut >= 0){ delete S.seen[S.codex[cut].sig]; S.codex.splice(cut,1); }
+      let cut = S.codex.findIndex(i=>!S.favs.includes(i.sig));
+      if (cut < 0) cut = 0; // all favorited: evict oldest so the cap holds
+      delete S.seen[S.codex[cut].sig]; S.codex.splice(cut,1);
     }
   }
   return isNew;
